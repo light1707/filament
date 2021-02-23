@@ -25,6 +25,10 @@ namespace filament::fg2 {
 template<typename T>
 class FrameGraphId;
 
+class Blackboard;
+class FrameGraph;
+class FrameGraphResources;
+class PassNode;
 class ResourceNode;
 
 /** A handle on a resource */
@@ -39,6 +43,8 @@ private:
 
     friend class Blackboard;
     friend class FrameGraph;
+    friend class FrameGraphResources;
+    friend class PassNode;
     friend class ResourceNode;
 
     // private ctor -- this cannot be constructed by users

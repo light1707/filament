@@ -421,12 +421,11 @@ TEST_F(FrameGraphTest, Basic) {
             [=](FrameGraphResources const& resources, auto const& data, backend::DriverApi& driver) {
                 FrameGraphTexture const& lightingBuffer = resources.get(data.lightingBuffer);
                 FrameGraphTexture const& depth = resources.get(data.depth);
-                FrameGraphTexture const& gbuf1 = resources.get(data.gbuf1);
+                EXPECT_ANY_THROW(FrameGraphTexture const& gbuf1 = resources.get(data.gbuf1));
                 FrameGraphTexture const& gbuf2 = resources.get(data.gbuf2);
                 FrameGraphTexture const& gbuf3 = resources.get(data.gbuf3);
                 EXPECT_TRUE((bool)lightingBuffer.handle);
                 EXPECT_TRUE((bool)depth.handle);
-                EXPECT_FALSE((bool)gbuf1.handle);
                 EXPECT_TRUE((bool)gbuf2.handle);
                 EXPECT_TRUE((bool)gbuf3.handle);
                 auto rp = resources.getRenderPassInfo();
@@ -491,17 +490,9 @@ TEST_F(FrameGraphTest, Basic) {
                 FrameGraphTexture const& backBuffer = resources.get(data.backBuffer);
                 EXPECT_TRUE((bool)lightingBuffer.handle);
                 EXPECT_TRUE((bool)backBuffer.handle);
-                EXPECT_FALSE((bool)resources.get(data.destroyed.depth).handle);
-                EXPECT_FALSE((bool)resources.get(data.destroyed.gbuf1).handle);
-                EXPECT_FALSE((bool)resources.get(data.destroyed.gbuf2).handle);
-                EXPECT_FALSE((bool)resources.get(data.destroyed.gbuf3).handle);
 
                 EXPECT_EQ(resources.getUsage(data.lightingBuffer), FrameGraphTexture::Usage::SAMPLEABLE | FrameGraphTexture::Usage::COLOR_ATTACHMENT);
                 EXPECT_EQ(resources.getUsage(data.backBuffer),                                   FrameGraphTexture::Usage::COLOR_ATTACHMENT);
-                EXPECT_EQ(resources.getUsage(data.destroyed.depth), FrameGraphTexture::Usage::SAMPLEABLE | FrameGraphTexture::Usage::DEPTH_ATTACHMENT);
-                EXPECT_EQ(resources.getUsage(data.destroyed.gbuf1),                              FrameGraphTexture::Usage::COLOR_ATTACHMENT);
-                EXPECT_EQ(resources.getUsage(data.destroyed.gbuf2), FrameGraphTexture::Usage::SAMPLEABLE | FrameGraphTexture::Usage::COLOR_ATTACHMENT);
-                EXPECT_EQ(resources.getUsage(data.destroyed.gbuf3), FrameGraphTexture::Usage::SAMPLEABLE | FrameGraphTexture::Usage::COLOR_ATTACHMENT);
 
                 auto rp = resources.getRenderPassInfo();
                 EXPECT_EQ(rp.params.flags.discardStart,TargetBufferFlags::COLOR0);
@@ -509,6 +500,21 @@ TEST_F(FrameGraphTest, Basic) {
                 EXPECT_EQ(rp.params.viewport.width, 16);
                 EXPECT_EQ(rp.params.viewport.height, 32);
                 EXPECT_TRUE((bool)rp.target);
+
+                EXPECT_ANY_THROW(resources.get(data.destroyed.depth));
+                EXPECT_ANY_THROW(resources.get(data.destroyed.gbuf1));
+                EXPECT_ANY_THROW(resources.get(data.destroyed.gbuf2));
+                EXPECT_ANY_THROW(resources.get(data.destroyed.gbuf3));
+
+                // we need a backdoor to make those checks
+//                EXPECT_FALSE((bool)resources.get(data.destroyed.depth).handle);
+//                EXPECT_FALSE((bool)resources.get(data.destroyed.gbuf1).handle);
+//                EXPECT_FALSE((bool)resources.get(data.destroyed.gbuf2).handle);
+//                EXPECT_FALSE((bool)resources.get(data.destroyed.gbuf3).handle);
+//                EXPECT_EQ(resources.getUsage(data.destroyed.depth), FrameGraphTexture::Usage::SAMPLEABLE | FrameGraphTexture::Usage::DEPTH_ATTACHMENT);
+//                EXPECT_EQ(resources.getUsage(data.destroyed.gbuf1),                              FrameGraphTexture::Usage::COLOR_ATTACHMENT);
+//                EXPECT_EQ(resources.getUsage(data.destroyed.gbuf2), FrameGraphTexture::Usage::SAMPLEABLE | FrameGraphTexture::Usage::COLOR_ATTACHMENT);
+//                EXPECT_EQ(resources.getUsage(data.destroyed.gbuf3), FrameGraphTexture::Usage::SAMPLEABLE | FrameGraphTexture::Usage::COLOR_ATTACHMENT);
             });
 
     fg.present(postPass->backBuffer);
@@ -707,6 +713,7 @@ TEST_F(FrameGraphTest, SubResourcesWrite) {
                 }
 
                 for (int i = 0; i < 4; i++) {
+                    data.outputs[i] = builder.write(data.outputs[i], FrameGraphTexture::Usage::COLOR_ATTACHMENT);
                     data.outputs[i] = builder.declareRenderPass(data.outputs[i]);
                 }
 
@@ -717,11 +724,7 @@ TEST_F(FrameGraphTest, SubResourcesWrite) {
             },
             [=](FrameGraphResources const& resources, auto const& data,
                     backend::DriverApi& driver) {
-                auto outputDesc = resources.getDescriptor(data.output);
-                auto output = resources.get(data.output);
-                EXPECT_TRUE(output.handle);
-                EXPECT_TRUE(any(resources.getUsage(data.output) & FrameGraphTexture::Usage::COLOR_ATTACHMENT));
-                EXPECT_TRUE(any(resources.getUsage(data.output) & FrameGraphTexture::Usage::SAMPLEABLE));
+                EXPECT_ANY_THROW(resources.get(data.output));
 
                 EXPECT_TRUE(resources.get(data.outputs[0]).handle);
                 EXPECT_TRUE(resources.get(data.outputs[1]).handle);

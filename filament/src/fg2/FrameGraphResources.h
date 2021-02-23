@@ -57,7 +57,7 @@ public:
      * @return          Reference to the concrete resource
      */
     template<typename RESOURCE>
-    RESOURCE const& get(FrameGraphId<RESOURCE> handle) const noexcept;
+    RESOURCE const& get(FrameGraphId<RESOURCE> handle) const;
 
     /**
      * Retrieves the descriptor associated to a resource
@@ -66,7 +66,7 @@ public:
      * @return          Reference to the descriptor
      */
     template<typename RESOURCE>
-    typename RESOURCE::Descriptor const& getDescriptor(FrameGraphId<RESOURCE> handle) const noexcept;
+    typename RESOURCE::Descriptor const& getDescriptor(FrameGraphId<RESOURCE> handle) const;
 
     /**
      * Retrieves the descriptor associated to a subresource
@@ -75,7 +75,8 @@ public:
      * @return          Reference to the subresource descriptor
      */
     template<typename RESOURCE>
-    typename RESOURCE::SubResourceDescriptor const& getSubResourceDescriptor(FrameGraphId<RESOURCE> handle) const noexcept;
+    typename RESOURCE::SubResourceDescriptor const& getSubResourceDescriptor(
+            FrameGraphId<RESOURCE> handle) const;
 
     /**
      * Retrieves the usage associated to a resource
@@ -84,7 +85,7 @@ public:
      * @return          Reference to the descriptor
      */
     template<typename RESOURCE>
-    typename RESOURCE::Usage const& getUsage(FrameGraphId<RESOURCE> handle) const noexcept;
+    typename RESOURCE::Usage const& getUsage(FrameGraphId<RESOURCE> handle) const;
 
     /**
      * Retrieves the render pass information associated with Builder::userRenderTarget() with the
@@ -92,19 +93,19 @@ public:
      * @param id identifier returned by Builder::userRenderTarget()
      * @return RenderPassInfo structure suitable for creating a render pass
      */
-    RenderPassInfo getRenderPassInfo(uint32_t id = 0u) const noexcept;
+    RenderPassInfo getRenderPassInfo(uint32_t id = 0u) const;
 
     /**
      * Helper to retrieve the handle of a FrameGraphTexture resource
      * @param handle to a FrameGraphTexture
      * @return backend concrete Texture handle
      */
-    backend::Handle<backend::HwTexture> getTexture(FrameGraphId<FrameGraphTexture> handle) const noexcept {
+    backend::Handle<backend::HwTexture> getTexture(FrameGraphId<FrameGraphTexture> handle) const {
         return get(handle).handle;
     }
 
 private:
-    VirtualResource const* getResource(FrameGraphHandle handle) const noexcept;
+    VirtualResource const& getResource(FrameGraphHandle handle) const;
     FrameGraph& mFrameGraph;
     PassNode& mPassNode;
 };
@@ -112,30 +113,26 @@ private:
 // ------------------------------------------------------------------------------------------------
 
 template<typename RESOURCE>
-RESOURCE const& FrameGraphResources::get(FrameGraphId<RESOURCE> handle) const noexcept {
-    // TODO: check that the handle is valid
-    return static_cast<Resource<RESOURCE> const*>(getResource(handle))->resource;
+RESOURCE const& FrameGraphResources::get(FrameGraphId<RESOURCE> handle) const {
+    return static_cast<Resource<RESOURCE> const&>(getResource(handle)).resource;
 }
 
 template<typename RESOURCE>
 typename RESOURCE::Descriptor const& FrameGraphResources::getDescriptor(
-        FrameGraphId<RESOURCE> handle) const noexcept {
-    // TODO: check that the handle is valid
-    return static_cast<Resource<RESOURCE> const*>(getResource(handle))->descriptor;
+        FrameGraphId<RESOURCE> handle) const {
+    return static_cast<Resource<RESOURCE> const&>(getResource(handle)).descriptor;
 }
 
 template<typename RESOURCE>
 typename RESOURCE::SubResourceDescriptor const& FrameGraphResources::getSubResourceDescriptor(
-        FrameGraphId<RESOURCE> handle) const noexcept {
-    // TODO: check that the handle is valid
-    return static_cast<Resource<RESOURCE> const*>(getResource(handle))->subResourceDescriptor;
+        FrameGraphId<RESOURCE> handle) const {
+    return static_cast<Resource<RESOURCE> const&>(getResource(handle)).subResourceDescriptor;
 }
 
 template<typename RESOURCE>
 typename RESOURCE::Usage const& FrameGraphResources::getUsage(
-        FrameGraphId<RESOURCE> handle) const noexcept {
-    // TODO: check that the handle is valid
-    return static_cast<Resource<RESOURCE> const*>(getResource(handle))->usage;
+        FrameGraphId<RESOURCE> handle) const {
+    return static_cast<Resource<RESOURCE> const&>(getResource(handle)).usage;
 }
 
 } // namespace filament::fg2

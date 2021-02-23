@@ -27,6 +27,7 @@ namespace filament::fg2 {
 
 PassNode::PassNode(FrameGraph& fg) noexcept
         : DependencyGraph::Node(fg.getGraph()),
+          mFrameGraph(fg),
           devirtualize(fg.getArena()),
           destroy(fg.getArena()) {
 }
@@ -39,10 +40,16 @@ utils::CString PassNode::graphvizifyEdgeColor() const noexcept {
     return utils::CString{"red"};
 }
 
+void PassNode::registerResource(FrameGraphHandle resourceHandle) noexcept {
+    VirtualResource* resource = mFrameGraph.getResource(resourceHandle);
+    resource->neededByPass(this);
+    mDeclaredHandles.insert(resourceHandle.index);
+}
+
 // ------------------------------------------------------------------------------------------------
 
 RenderPassNode::RenderPassNode(FrameGraph& fg, const char* name, FrameGraphPassBase* base) noexcept
-        : PassNode(fg), mFrameGraph(fg), mName(name), mPassBase(base, fg.getArena()) {
+        : PassNode(fg), mName(name), mPassBase(base, fg.getArena()) {
 }
 RenderPassNode::RenderPassNode(RenderPassNode&& rhs) noexcept = default;
 RenderPassNode::~RenderPassNode() noexcept = default;
@@ -72,7 +79,7 @@ void RenderPassNode::execute(FrameGraphResources const& resources,
 uint32_t RenderPassNode::declareRenderTarget(FrameGraph& fg, FrameGraph::Builder& builder,
         const char* name, FrameGraphRenderPass::Descriptor const& descriptor) {
 
-    RenderTargetData data;
+    RenderPassData data;
     data.name = name;
     data.descriptor = descriptor;
     FrameGraphRenderPass::Attachments& attachments = data.descriptor.attachments;
@@ -104,7 +111,7 @@ uint32_t RenderPassNode::declareRenderTarget(FrameGraph& fg, FrameGraph::Builder
             }
 
             // this could be either outgoing or incoming (if there are no outgoing)
-            data.outgoing[i] = fg.getResourceNode(descriptor.attachments.array[i]);
+            data.outgoing[i] = fg.getActiveResourceNode(descriptor.attachments.array[i]);
             if (data.outgoing[i] == data.incoming[i]) {
                 data.outgoing[i] = nullptr;
             }
@@ -217,7 +224,7 @@ void RenderPassNode::resolve() noexcept {
     }
 }
 
-void RenderPassNode::RenderTargetData::devirtualize(FrameGraph& fg,
+void RenderPassNode::RenderPassData::devirtualize(FrameGraph& fg,
         ResourceAllocatorInterface& resourceAllocator) noexcept {
     assert_invariant(any(targetBufferFlags));
     if (UTILS_LIKELY(!imported)) {
@@ -243,17 +250,15 @@ void RenderPassNode::RenderTargetData::devirtualize(FrameGraph& fg,
     }
 }
 
-void RenderPassNode::RenderTargetData::destroy(
+void RenderPassNode::RenderPassData::destroy(
         ResourceAllocatorInterface& resourceAllocator) noexcept {
     if (UTILS_LIKELY(!imported)) {
         resourceAllocator.destroyRenderTarget(backend.target);
     }
 }
 
-RenderPassNode::RenderTargetData const& RenderPassNode::getRenderTargetData(
-        uint32_t id) const noexcept {
-    assert_invariant(id < mRenderTargetData.size());
-    return mRenderTargetData[id];
+RenderPassNode::RenderPassData const* RenderPassNode::getRenderPassData(uint32_t id) const noexcept {
+    return id < mRenderTargetData.size() ? &mRenderTargetData[id] : nullptr;
 }
 
 utils::CString RenderPassNode::graphvizify() const noexcept {

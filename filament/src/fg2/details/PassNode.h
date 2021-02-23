@@ -23,6 +23,8 @@
 #include "fg2/FrameGraphRenderPass.h"
 #include "private/backend/DriverApiForward.h"
 
+#include <tsl/robin_set.h>
+
 namespace utils {
 class CString;
 } // namespace utils
@@ -35,6 +37,10 @@ class FrameGraphPassExecutor;
 class ResourceNode;
 
 class PassNode : public DependencyGraph::Node {
+protected:
+    friend class FrameGraphResources;
+    FrameGraph& mFrameGraph;
+    tsl::robin_set<FrameGraphHandle::Index> mDeclaredHandles;
 public:
     PassNode(FrameGraph& fg) noexcept;
     PassNode(PassNode&& rhs) noexcept;
@@ -42,6 +48,8 @@ public:
     PassNode& operator=(PassNode const&) = delete;
     ~PassNode() noexcept override;
     using NodeID = DependencyGraph::NodeID;
+
+    void registerResource(FrameGraphHandle resourceHandle) noexcept;
 
     virtual void execute(FrameGraphResources const& resources, backend::DriverApi& driver) noexcept = 0;
     virtual void resolve() noexcept = 0;
@@ -53,7 +61,7 @@ public:
 
 class RenderPassNode : public PassNode {
 public:
-    class RenderTargetData {
+    class RenderPassData {
     public:
         const char* name = {};
         FrameGraphRenderPass::Descriptor descriptor;
@@ -78,7 +86,7 @@ public:
     uint32_t declareRenderTarget(FrameGraph& fg, FrameGraph::Builder& builder,
             const char* name, FrameGraphRenderPass::Descriptor const& descriptor);
 
-    RenderTargetData const& getRenderTargetData(uint32_t id) const noexcept;
+    RenderPassData const* getRenderPassData(uint32_t id) const noexcept;
 
 private:
     // virtuals from DependencyGraph::Node
@@ -89,12 +97,11 @@ private:
     void resolve() noexcept override;
 
     // constants
-    FrameGraph& mFrameGraph;
     const char* const mName = nullptr;
     UniquePtr<FrameGraphPassBase, LinearAllocatorArena> mPassBase;
 
     // set during setup
-    std::vector<RenderTargetData> mRenderTargetData;
+    std::vector<RenderPassData> mRenderTargetData;
 };
 
 class PresentPassNode : public PassNode {

@@ -17,6 +17,7 @@
 #include "fg2/FrameGraph.h"
 #include "fg2/FrameGraphResources.h"
 #include "fg2/details/PassNode.h"
+#include "fg2/details/ResourceNode.h"
 
 namespace filament::fg2 {
 
@@ -28,18 +29,37 @@ const char* FrameGraphResources::getPassName() const noexcept {
     return mPassNode.getName();
 }
 
-VirtualResource const* FrameGraphResources::getResource(FrameGraphHandle handle) const noexcept {
-    return mFrameGraph.getResource(handle);
+// this perhaps weirdly returns a reference, this is to express the fact that if this method
+// fails, it has to assert (or throw), it can't return for e.g. a nullptr, because the public
+// API doesn't return pointers.
+// We still use ASSERT_PRECONDITION() because these failures are due to post conditions not met.
+VirtualResource const& FrameGraphResources::getResource(FrameGraphHandle handle) const {
+    ASSERT_PRECONDITION(handle, "Uninitialized handle when using FrameGraphResources.");
+
+    VirtualResource const* const resource = mFrameGraph.getResource(handle);
+
+    auto& declaredHandles = mPassNode.mDeclaredHandles;
+    const bool hasReadOrWrite = declaredHandles.find(handle.index) != declaredHandles.cend();
+
+    ASSERT_PRECONDITION(hasReadOrWrite,
+            "Pass \"%s\" didn't declare any access to resource \"%s\"",
+            mPassNode.getName(), resource->name);
+
+    assert_invariant(resource->refcount);
+
+    return *resource;
 }
 
-FrameGraphResources::RenderPassInfo FrameGraphResources::getRenderPassInfo(
-        uint32_t id) const noexcept {
+FrameGraphResources::RenderPassInfo FrameGraphResources::getRenderPassInfo(uint32_t id) const {
     // this cast is safe because this can only be called from a RenderPassNode
     RenderPassNode const& renderPassNode = static_cast<RenderPassNode const&>(mPassNode);
-    RenderPassNode::RenderTargetData const& rt = renderPassNode.getRenderTargetData(id);
-    return { rt.backend.target, rt.backend.params };
+    RenderPassNode::RenderPassData const* pRenderPassData = renderPassNode.getRenderPassData(id);
+
+    ASSERT_PRECONDITION(pRenderPassData,
+            "using invalid RenderPass index %u in Pass \"%s\"",
+            id, mPassNode.getName());
+
+    return { pRenderPassData->backend.target, pRenderPassData->backend.params };
 }
 
 } // namespace filament::fg2
-
-

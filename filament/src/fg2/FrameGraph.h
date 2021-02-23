@@ -439,7 +439,7 @@ private:
         return mResources[slot.rid].get();
     }
 
-    ResourceNode* getResourceNode(FrameGraphHandle handle) noexcept {
+    ResourceNode* getActiveResourceNode(FrameGraphHandle handle) noexcept {
         ResourceSlot const& slot = getResourceSlot(handle);
         assert_invariant((size_t)slot.nid < mResourceNodes.size());
         return mResourceNodes[slot.nid].get();
@@ -450,7 +450,7 @@ private:
     }
 
     ResourceNode const* getResourceNode(FrameGraphHandle handle) const noexcept {
-        return const_cast<FrameGraph*>(this)->getResourceNode(handle);
+        return const_cast<FrameGraph*>(this)->getActiveResourceNode(handle);
     }
 
     Blackboard mBlackboard;

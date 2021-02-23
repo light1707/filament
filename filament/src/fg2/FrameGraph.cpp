@@ -113,8 +113,7 @@ FrameGraph& FrameGraph::compile() noexcept {
             // all incoming edges should be valid by construction
             assert_invariant(dependencyGraph.isEdgeValid(edge));
             auto pNode = static_cast<ResourceNode*>(dependencyGraph.getNode(edge->from));
-            VirtualResource* pResource = getResource(pNode->resourceHandle);
-            pResource->neededByPass(passNode);
+            passNode->registerResource(pNode->resourceHandle);
         }
 
         auto const& writes = dependencyGraph.getOutgoingEdges(passNode);
@@ -123,8 +122,7 @@ FrameGraph& FrameGraph::compile() noexcept {
             // but, because we are not culled and we're a pass, we add a reference to
             // the resource we are writing to.
             auto pNode = static_cast<ResourceNode*>(dependencyGraph.getNode(edge->to));
-            VirtualResource* pResource = getResource(pNode->resourceHandle);
-            pResource->neededByPass(passNode);
+            passNode->registerResource(pNode->resourceHandle);
         }
 
         passNode->resolve();
@@ -260,7 +258,7 @@ FrameGraphHandle FrameGraph::readInternal(FrameGraphHandle handle, PassNode* pas
     }
 
     VirtualResource* const resource = getResource(handle);
-    ResourceNode* const node = getResourceNode(handle);
+    ResourceNode* const node = getActiveResourceNode(handle);
 
     // Check preconditions
     bool passAlreadyAWriter = node->hasWriteFrom(passNode);
@@ -312,7 +310,7 @@ FrameGraphHandle FrameGraph::writeInternal(FrameGraphHandle handle, PassNode* pa
     }
 
     VirtualResource* const resource = getResource(handle);
-    ResourceNode* node = getResourceNode(handle);
+    ResourceNode* node = getActiveResourceNode(handle);
     ResourceNode* parentNode = node->getParentNode();
 
     // if we're writing into a subresource, we also need to add a "write" from the subresource
@@ -334,7 +332,7 @@ FrameGraphHandle FrameGraph::writeInternal(FrameGraphHandle handle, PassNode* pa
             handle = createNewVersion(handle,
                     parentNode ? parentNode->resourceHandle : FrameGraphHandle{});
             // refresh the node
-            node = getResourceNode(handle);
+            node = getActiveResourceNode(handle);
         }
     }
 
@@ -365,8 +363,8 @@ FrameGraphHandle FrameGraph::forwardResourceInternal(FrameGraphHandle resourceHa
         return {};
     }
 
-    getResourceNode(replaceResourceHandle)->setForwardResourceDependency(
-            getResourceNode(resourceHandle));
+    getActiveResourceNode(replaceResourceHandle)->setForwardResourceDependency(
+            getActiveResourceNode(resourceHandle));
 
     ResourceSlot const& resourceSlot = getResourceSlot(resourceHandle);
     ResourceSlot& replacedResourceSlot = getResourceSlot(replaceResourceHandle);

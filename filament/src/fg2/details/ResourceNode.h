@@ -54,6 +54,7 @@ public:
 
     // is the specified PassNode writing to this resource, if so return the corresponding edge.
     ResourceEdgeBase* getWriterEdgeForPass(PassNode const* node) const noexcept;
+    bool hasWriteFrom(PassNode const* node) const noexcept;
 
 
     // is at least one PassNode reading from this ResourceNode
@@ -66,7 +67,6 @@ public:
 
     // is the specified PassNode reading this resource, if so return the corresponding edge.
     ResourceEdgeBase* getReaderEdgeForPass(PassNode const* node) const noexcept;
-    bool hasWriteFrom(PassNode const* node) const noexcept;
 
 
     void resolveResourceUsage(DependencyGraph& graph) noexcept;

@@ -39,7 +39,7 @@ ResourceNode::~ResourceNode() noexcept {
 
 ResourceNode* ResourceNode::getParentNode() noexcept {
     return mParentHandle.isInitialized() ?
-           mFrameGraph.getResourceNode(mParentHandle) : nullptr;
+           mFrameGraph.getActiveResourceNode(mParentHandle) : nullptr;
 }
 
 void ResourceNode::onCulled(DependencyGraph* graph) noexcept {
